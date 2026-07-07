@@ -50,7 +50,7 @@ SITES = [
     },
 ]
 STUDY_AREA_BUFFER_M = (
-    500  # buffer around the union of all sites for project-wide exports
+    150  # buffer around the union of all sites for project-wide exports
 )
 
 #################### DYNAMIC WORLD HISTORICAL CHANGE (Objective 1) ##########################
@@ -80,34 +80,62 @@ DW_PERIODS = {
     "pre": (2019, 2021),
     "current": (2022, 2025),
 }
-DW_MIN_OBS_ANNUAL = 6
-DW_MIN_OBS_SEASONAL = 3
-DW_COVERAGE_WARNING_PCT = (
-    80  # flag site-years below this valid-pixel coverage (TGBS_Kwale precedent)
-)
+# Recalibrated 2026-07-06 (round 1: was 6/3; round 2, same day: 4/2 -> 3/1) -- visual QA after
+# round 1 still showed a moderate amount of masked (no-class) pixels. valid_obs_count is a
+# per-pixel count of cloud-free Sentinel-2 acquisitions in the window; the wet season in
+# particular (Mar-May, the rainiest months) frequently doesn't clear more than 1-2 cloud-free
+# passes at this AOI. The plan itself (objective-1 doc, §6) anticipates this: "Adjust these
+# thresholds if cloud masking or image availability is too restrictive." At min_obs=1 the
+# "composite" is effectively whatever single image was available -- still transparently a
+# median, just over a window of 1, and still not a final calibration; revisit against
+# high-resolution imagery per the plan's open questions.
+DW_MIN_OBS_ANNUAL = 3  # was 6 -> 4 -> 3
+DW_MIN_OBS_SEASONAL = 1  # was 3 -> 2 -> 1
+DW_COVERAGE_WARNING_PCT = 60  # was 80 -> 70 -> 60 -- QA/reporting threshold only (see coverage_flag); does not mask any pixels
 
-# Habitat classification thresholds (plan §7) -- starting values pending visual calibration
+# Habitat classification thresholds -- round 2 recalibration (2026-07-06), following a code fix
+# to classify_habitat's rule precedence (see that function's docstring in the notebook): rules
+# were being applied crops-first/natural-last, and since each `.where()` overwrites matches, the
+# LAST rule silently won -- so cropland pixels with moderate natural_prob were being overwritten
+# to "mixed natural"/grassland/uncertain regardless of threshold values. That is now fixed by
+# reordering (crops has highest effective precedence) and by dropping a redundant
+# dominance-margin check on the "mixed natural" catch-all that left skewed-but-real vegetation
+# signal with no valid class. The threshold nudges below are a secondary, smaller pass on top of
+# that fix, for the residual moderate masking/uncertainty visual QA still showed afterward.
+# Original (2026-07 plan) values noted per key; still starting values pending visual calibration
 # against high-resolution imagery; do not treat as final.
 DW_HABITAT_THRESHOLDS = {
-    "crops_min": 0.45,
-    "built_min": 0.35,
-    "water_wetland_min": 0.45,
-    "bare_min": 0.40,
-    "woody_min": 0.45,
-    "grass_min": 0.45,
-    "woody_grass_margin": 0.10,
-    "natural_min": 0.55,
-    "top1_min": 0.35,
+    "crops_min": 0.28,  # was 0.45 -> 0.40 -> 0.35 -> 0.25 -- crops is a single raw DW band,
+    # while natural_prob/woody_prob are SUMS of 2-3 bands; since all 9 class probabilities sum
+    # to 1 per pixel, an aggregated band starts from a structurally higher ceiling than any
+    # single band, so a similar absolute floor systematically favors natural/woody/grass over
+    # crops even when crops is the clear plurality (e.g. crops=0.28 with the rest thinly spread
+    # across trees/shrub/grass/bare). RISK: crops has the highest effective precedence (see
+    # classify_habitat), so this floor alone decides cropland with no competing-signal check --
+    # watch for false-positive cropland at Mbokishi (the reference/intact-habitat site) after
+    # this change; walk back toward ~0.28-0.30 if it appears there.
+    "built_min": 0.38,  # was 0.35 -> 0.30 -- built-up pixels are often small/mixed, per the plan's own note
+    "water_wetland_min": 0.35,  # was 0.45 -> 0.40
+    "bare_min": 0.35,  # was 0.40 -> 0.35
+    "woody_min": 0.40,  # was 0.45 -> 0.35 -> 0.30
+    "grass_min": 0.35,  # was 0.45 -> 0.35 -> 0.30
+    "woody_grass_margin": 0.06,  # was 0.10 -> 0.08 -> 0.06 -- smaller dominance gap needed to call woody vs. grass
+    "natural_min": 0.30,  # was 0.55 -> 0.40 -> 0.35 -> 0.30 -- the "mixed natural habitat"
+    # catch-all; a true fallback (no margin restriction, see notebook classify_habitat) so this
+    # is the main lever for how much moderate-confidence vegetation signal counts as classifiable
+    "top1_min": 0.25,  # was 0.35 -> 0.30 -> 0.25 -- DW confidence proxy; sand/bare/arid surfaces
+    # are known to depress top1_prob by scoring across multiple classes at once (see
+    # wiki/tools/dynamic-world.md)
 }
 DW_HABITAT_CLASS_CODES = list(
     range(1, 9)
 )  # classify_habitat never emits 0 (NoData/outside AOI)
 
-# Conversion-pressure thresholds (plan §8)
+# Conversion-pressure thresholds
 DW_PRESSURE_THRESHOLDS = {"moderate_min": 0.35, "high_min": 0.55}
 DW_PRESSURE_CLASS_CODES = [0, 1, 2]
 
-# All from-class x to-class combinations of the 8 habitat classes (plan §8 transition coding).
+# All from-class x to-class combinations of the 8 habitat classes.
 DW_TRANSITION_CODES = [
     f * 10 + t for f in DW_HABITAT_CLASS_CODES for t in DW_HABITAT_CLASS_CODES
 ]
@@ -119,7 +147,7 @@ DW_CONNECTIVITY_THRESHOLDS = {
     "top1_prob_min": 0.35,
 }
 
-# Visualization presets (geemap / ee visParams)
+# Visualization presets
 DW_HABITAT_CLASS_VIS = {
     "min": 0,
     "max": 8,
@@ -140,15 +168,23 @@ DW_PRESSURE_VIS = {
     "max": 2,
     "palette": ["#1a9850", "#fee08b", "#d73027"],
 }
+# transition_code = from_class * 10 + to_class, where both from_class and to_class are
+# DW_HABITAT_CLASS_CODES (1-8, see DW_HABITAT_CLASS_VIS above for what each code means). "min"
+# and "max" are the lowest/highest codes that can occur (11 = woody->woody i.e. persistent
+# woody; 88 = uncertain->uncertain i.e. persistent uncertain) -- NOT a severity scale. EE/geemap
+# linearly interpolates the 6 palette colors across that 11-88 numeric range, so color is driven
+# mainly by the FROM class (the tens digit) and only subtly by the TO class (the ones digit,
+# worth only ~1/77th of the range) -- the ramp is a visual differentiator, not a "loss=red,
+# gain=green" encoding. Approximate stop values under linear interpolation (step = 77/5 = 15.4):
 DW_TRANSITION_VIS = {
     "min": 11,
     "max": 88,
     "palette": [
-        "#800026",
-        "#f03b20",
-        "#fd8d3c",
-        "#ffffb2",
-        "#c7e9b4",
-        "#41b6c4",
+        "#800026",  # ~11.0 -- from_class 1 (woody) origin, e.g. persistent woody (11)
+        "#f03b20",  # ~26.4 -- from_class 2 (grassland) origin, e.g. grass->cropland (24)
+        "#fd8d3c",  # ~41.8 -- from_class 4 (cropland) origin, e.g. cropland->woody recovery (41)
+        "#ffffb2",  # ~57.2 -- from_class 5-6 (built/bare) origin
+        "#c7e9b4",  # ~72.6 -- from_class 7 (water/flooded) origin
+        "#41b6c4",  # ~88.0 -- from_class 8 (uncertain) origin, e.g. persistent uncertain (88)
     ],
 }
