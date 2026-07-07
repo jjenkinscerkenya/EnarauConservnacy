@@ -133,10 +133,21 @@ DW_HABITAT_THRESHOLDS = {
 DW_HABITAT_CLASS_CODES = list(
     range(1, 9)
 )  # classify_habitat never emits 0 (NoData/outside AOI)
+DW_HABITAT_CLASS_LABELS = {
+    1: "Woody",
+    2: "Grassland",
+    3: "Mixed natural",
+    4: "Cropland",
+    5: "Built",
+    6: "Bare/degraded",
+    7: "Water/flooded veg",
+    8: "Uncertain",
+}
 
 # Conversion-pressure thresholds
 DW_PRESSURE_THRESHOLDS = {"moderate_min": 0.35, "high_min": 0.55}
 DW_PRESSURE_CLASS_CODES = [0, 1, 2]
+DW_PRESSURE_CLASS_LABELS = {0: "Low", 1: "Moderate", 2: "High"}
 
 # All from-class x to-class combinations of the 8 habitat classes.
 DW_TRANSITION_CODES = [
