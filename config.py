@@ -104,6 +104,9 @@ DW_COVERAGE_WARNING_PCT = 60  # was 80 -> 70 -> 60 -- QA/reporting threshold onl
 # that fix, for the residual moderate masking/uncertainty visual QA still showed afterward.
 # Original (2026-07 plan) values noted per key; still starting values pending visual calibration
 # against high-resolution imagery; do not treat as final.
+
+
+# *** The classification test is probability_band.gte(threshold)Lowering the threshold makes that comparison true for more pixels, so more pixels get assigned to that class.
 DW_HABITAT_THRESHOLDS = {
     "crops_min": 0.28,  # was 0.45 -> 0.40 -> 0.35 -> 0.25 -- crops is a single raw DW band,
     # while natural_prob/woody_prob are SUMS of 2-3 bands; since all 9 class probabilities sum
@@ -116,7 +119,7 @@ DW_HABITAT_THRESHOLDS = {
     # this change; walk back toward ~0.28-0.30 if it appears there.
     "built_min": 0.38,  # was 0.35 -> 0.30 -- built-up pixels are often small/mixed, per the plan's own note
     "water_wetland_min": 0.35,  # was 0.45 -> 0.40
-    "bare_min": 0.35,  # was 0.40 -> 0.35
+    "bare_min": 0.30,  # was 0.40 -> 0.35
     "woody_min": 0.40,  # was 0.45 -> 0.35 -> 0.30
     "grass_min": 0.35,  # was 0.45 -> 0.35 -> 0.30
     "woody_grass_margin": 0.06,  # was 0.10 -> 0.08 -> 0.06 -- smaller dominance gap needed to call woody vs. grass
@@ -144,7 +147,7 @@ DW_TRANSITION_CODES = [
 DW_CONNECTIVITY_THRESHOLDS = {
     "natural_prob_min": 0.60,
     "conversion_pressure_max": 0.30,
-    "top1_prob_min": 0.35,
+    "top1_prob_min": 0.28,
 }
 
 # Visualization presets
