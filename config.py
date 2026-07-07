@@ -80,8 +80,7 @@ DW_PERIODS = {
     "pre": (2019, 2021),
     "current": (2022, 2025),
 }
-# Recalibrated 2026-07-06 (round 1: was 6/3; round 2, same day: 4/2 -> 3/1) -- visual QA after
-# round 1 still showed a moderate amount of masked (no-class) pixels. valid_obs_count is a
+# -- visual QA after round 1 still showed a moderate amount of masked (no-class) pixels. valid_obs_count is a
 # per-pixel count of cloud-free Sentinel-2 acquisitions in the window; the wet season in
 # particular (Mar-May, the rainiest months) frequently doesn't clear more than 1-2 cloud-free
 # passes at this AOI. The plan itself (objective-1 doc, §6) anticipates this: "Adjust these
@@ -89,9 +88,10 @@ DW_PERIODS = {
 # "composite" is effectively whatever single image was available -- still transparently a
 # median, just over a window of 1, and still not a final calibration; revisit against
 # high-resolution imagery per the plan's open questions.
-DW_MIN_OBS_ANNUAL = 3  # was 6 -> 4 -> 3
-DW_MIN_OBS_SEASONAL = 1  # was 3 -> 2 -> 1
-DW_COVERAGE_WARNING_PCT = 60  # was 80 -> 70 -> 60 -- QA/reporting threshold only (see coverage_flag); does not mask any pixels
+
+DW_MIN_OBS_ANNUAL = 3
+DW_MIN_OBS_SEASONAL = 1
+DW_COVERAGE_WARNING_PCT = 60  # -- QA/reporting threshold only (see coverage_flag); does not mask any pixels
 
 # Habitat classification thresholds -- round 2 recalibration (2026-07-06), following a code fix
 # to classify_habitat's rule precedence (see that function's docstring in the notebook): rules
@@ -108,7 +108,7 @@ DW_COVERAGE_WARNING_PCT = 60  # was 80 -> 70 -> 60 -- QA/reporting threshold onl
 
 # *** The classification test is probability_band.gte(threshold)Lowering the threshold makes that comparison true for more pixels, so more pixels get assigned to that class.
 DW_HABITAT_THRESHOLDS = {
-    "crops_min": 0.28,  # was 0.45 -> 0.40 -> 0.35 -> 0.25 -- crops is a single raw DW band,
+    "crops_min": 0.28,  # -- crops is a single raw DW band,
     # while natural_prob/woody_prob are SUMS of 2-3 bands; since all 9 class probabilities sum
     # to 1 per pixel, an aggregated band starts from a structurally higher ceiling than any
     # single band, so a similar absolute floor systematically favors natural/woody/grass over
@@ -117,16 +117,16 @@ DW_HABITAT_THRESHOLDS = {
     # classify_habitat), so this floor alone decides cropland with no competing-signal check --
     # watch for false-positive cropland at Mbokishi (the reference/intact-habitat site) after
     # this change; walk back toward ~0.28-0.30 if it appears there.
-    "built_min": 0.38,  # was 0.35 -> 0.30 -- built-up pixels are often small/mixed, per the plan's own note
-    "water_wetland_min": 0.35,  # was 0.45 -> 0.40
-    "bare_min": 0.30,  # was 0.40 -> 0.35
-    "woody_min": 0.40,  # was 0.45 -> 0.35 -> 0.30
-    "grass_min": 0.35,  # was 0.45 -> 0.35 -> 0.30
-    "woody_grass_margin": 0.06,  # was 0.10 -> 0.08 -> 0.06 -- smaller dominance gap needed to call woody vs. grass
-    "natural_min": 0.30,  # was 0.55 -> 0.40 -> 0.35 -> 0.30 -- the "mixed natural habitat"
+    "built_min": 0.38,  # -- built-up pixels are often small/mixed, per the plan's own note
+    "water_wetland_min": 0.35,
+    "bare_min": 0.30,
+    "woody_min": 0.40,
+    "grass_min": 0.35,
+    "woody_grass_margin": 0.06,  # -- smaller dominance gap needed to call woody vs. grass
+    "natural_min": 0.30,  # -- the "mixed natural habitat"
     # catch-all; a true fallback (no margin restriction, see notebook classify_habitat) so this
     # is the main lever for how much moderate-confidence vegetation signal counts as classifiable
-    "top1_min": 0.25,  # was 0.35 -> 0.30 -> 0.25 -- DW confidence proxy; sand/bare/arid surfaces
+    "top1_min": 0.25,  # -- DW confidence proxy; sand/bare/arid surfaces
     # are known to depress top1_prob by scoring across multiple classes at once (see
     # wiki/tools/dynamic-world.md)
 }
@@ -179,6 +179,7 @@ DW_PRESSURE_VIS = {
 # mainly by the FROM class (the tens digit) and only subtly by the TO class (the ones digit,
 # worth only ~1/77th of the range) -- the ramp is a visual differentiator, not a "loss=red,
 # gain=green" encoding. Approximate stop values under linear interpolation (step = 77/5 = 15.4):
+
 DW_TRANSITION_VIS = {
     "min": 11,
     "max": 88,
