@@ -53,8 +53,14 @@ STUDY_AREA_BUFFER_M = (
     150  # buffer around the union of all sites for project-wide exports
 )
 
+#################### PROJECT-WIDE SETTINGS ##########################
+# Single project-wide CRS, used by every objective's notebook -- confirmed 2026-07-06 as WGS 84
+# / UTM zone 36S. The Objective 1 plan document's own EPSG:32637 (UTM zone 37N) is the wrong
+# hemisphere for this AOI (~35.3°E, ~1.0-1.1°S); propagate this correction rather than
+# re-verifying it per objective.
+PROJECT_CRS = "EPSG:32736"
+
 #################### DYNAMIC WORLD HISTORICAL CHANGE (Objective 1) ##########################
-DW_CRS = "EPSG:32736"  # WGS 84 / UTM zone 36S -- the plan's EPSG:32637 (UTM 37N) is the wrong hemisphere
 DW_EXPORT_FOLDER = "CERK_Enarau_DW_HistoricalChange"
 DW_EXCLUDED_PROB_BANDS = [
     "snow_and_ice"
@@ -202,4 +208,70 @@ DW_TRANSITION_VIS = {
         "#c7e9b4",  # ~72.6 -- from_class 7 (water/flooded) origin
         "#41b6c4",  # ~88.0 -- from_class 8 (uncertain) origin, e.g. persistent uncertain (88)
     ],
+}
+
+#################### PRODUCTIVITY & DEGRADATION TIME SERIES (Objective 2) ##########################
+EXPORT_FOLDER = "CERK_Enarau_Objective2_ProductivityDegradation"
+
+# Sensor record start years (native data availability, not a study-window choice).
+LANDSAT_YEAR_START = 1984
+HLS_YEAR_START = 2015
+S2_YEAR_START = 2017
+# Last COMPLETE year as of this repo's current date (2026-07-08): the 2026 wet season
+# (Mar-May) is already complete but the 2026 dry season (Jul-Oct) is still in progress, so every
+# sensor/season composite stops at 2025 -- keeping all three seasons' year ranges identical
+# avoids a partial-season 2026 composite silently looking comparable to a complete one. Revisit
+# once the 2026 dry season closes (after ~Nov 2026) if an earlier wet-2026 composite is wanted.
+YEAR_END = 2025
+
+SEASON_MONTHS = {"wet": (3, 5), "dry": (7, 10), "annual": (1, 12)}
+
+# Headline multi-year periods (plan Sec.4) -- distinct from Objective 1's DW_PERIODS, which uses
+# different year ranges since Dynamic World only starts mid-2015.
+PERIODS = {
+    "baseline": (1984, 2000),  # long-term historical reference (Landsat only)
+    "pre": (2016, 2021),  # recent pre-Enarau baseline
+    "current": (2022, 2025),  # post-establishment / current complete period
+}
+
+# Minimum valid_obs_count thresholds per season type -- starting values (plan Sec.6.4 for
+# Landsat, Sec.8.2 for Sentinel-2; HLS has no plan-specified threshold, so it borrows the Landsat
+# values as a starting point). Not yet calibrated against visual QA, same caveat as
+# config.DW_MIN_OBS_*.
+MIN_OBS = {
+    "landsat": {"wet": 2, "dry": 2, "annual": 4},
+    "hls": {"wet": 2, "dry": 2, "annual": 4},
+    "sentinel2": {"wet": 3, "dry": 3, "annual": 6},
+}
+
+# Index bands common to every sensor, all present in eetools.sensors.indices.INDEX_REGISTRY
+# (including MSAVI2 as of the eetools update that added calc_msavi2/calc_ci_red_edge). NDVI and
+# MNDWI are requested from every sensor collection builder purely to satisfy eetools'
+# water-masking precondition (sensors.masking.validate_water_mask_selection); MNDWI is dropped
+# before composites/exports.
+WATER_MASK_HOUSEKEEPING_BANDS = ["MNDWI"]
+INDEX_BANDS_COMMON = ["NDVI", "EVI2", "MSAVI2", "NDMI", "NBR", "NBR2", "BSI"]
+# Sentinel-2-only red-edge indices (plan Sec.5), both from eetools' INDEX_REGISTRY -- only
+# computable where the band map has a red-edge band, i.e. Sentinel-2 (HLS/Landsat have none).
+S2_INDEX_BANDS_EXTRA = ["NDRE", "CIred_edge"]
+
+VALID_OBS_BAND = "valid_obs_count"
+
+# LandTrendr (plan Sec.11) -- run_params intentionally omitted: eetools.constants.
+# LANDTRENDR_DEFAULT_RUN_PARAMS already matches the plan's own LANDTRENDR_PARAMS starting values
+# exactly (maxSegments=6, spikeThreshold=0.9, vertexCountOvershoot=3, preventOneYearRecovery=True,
+# recoveryThreshold=0.25, pvalThreshold=0.05, bestModelProportion=0.75, minObservationsNeeded=6),
+# so no override is needed.
+LANDTRENDR_YEAR_START = 1984
+LANDTRENDR_YEAR_END = 2025
+LANDTRENDR_SEASON_DAYS = ("07-01", "10-31")  # dry season, matches SEASON_MONTHS["dry"]
+LANDTRENDR_SEGMENTATION_INDEX = "NBR"
+# eetools.landtrendr now accepts any INDEX_REGISTRY index computable from the Landsat common
+# bands as an FTV band (generalized beyond the old NBR/NDVI/NDMI-only allowlist), so MSAVI2 and
+# BSI (the plan's own Sec.11.2 request) are included alongside NDMI -- CIred_edge/NDRE are not
+# usable here since Landsat has no red-edge band.
+LANDTRENDR_FTV_INDICES = ["NDMI", "MSAVI2", "BSI"]
+LANDTRENDR_RECENT_WINDOWS = {
+    "disturbance": [(2016, 2025), (2022, 2025)],
+    "recovery": [(2016, 2025)],
 }
