@@ -264,13 +264,31 @@ VALID_OBS_BAND = "valid_obs_count"
 # so no override is needed.
 LANDTRENDR_YEAR_START = 1984
 LANDTRENDR_YEAR_END = 2025
-LANDTRENDR_SEASON_DAYS = ("07-01", "10-31")  # dry season, matches SEASON_MONTHS["dry"]
+LANDTRENDR_SEASON_DAYS_DRY = (
+    "07-01",
+    "10-31",
+)  # dry season, matches SEASON_MONTHS["dry"]
+LANDTRENDR_SEASON_DAYS_WET = (
+    "03-01",
+    "05-31",
+)  # wet season, matches SEASON_MONTHS["wet"] -- plan Sec.11.6 complementary MSAVI2 run
 LANDTRENDR_SEGMENTATION_INDEX = "NBR"
 # eetools.landtrendr now accepts any INDEX_REGISTRY index computable from the Landsat common
 # bands as an FTV band (generalized beyond the old NBR/NDVI/NDMI-only allowlist), so MSAVI2 and
 # BSI (the plan's own Sec.11.2 request) are included alongside NDMI -- CIred_edge/NDRE are not
 # usable here since Landsat has no red-edge band.
 LANDTRENDR_FTV_INDICES = ["NDMI", "MSAVI2", "BSI"]
+
+# Plan Sec.11.6 -- complementary run segmented on wet-season MSAVI2 instead of dry-season NBR,
+# to catch productivity decline / sparse-vegetation-cover loss that the woody-condition-oriented
+# NBR segmentation under-detects. NBR, NDMI, and BSI are fit as FTV bands at the MSAVI2 vertex
+# years (not re-segmented independently) -- same set the plan's Sec.11.6 calls for. Segmentation
+# orientation resolves the plan's own open question: eetools.constants.LANDTRENDR_DIST_DIR has no
+# MSAVI2 entry, so it falls back to LANDTRENDR_DEFAULT_DIST_DIR (-1), which is correct since
+# MSAVI2 is vegetation-positive like NDVI/NBR/NDMI (loss = negative delta).
+LANDTRENDR_MSAVI2SEG_SEGMENTATION_INDEX = "MSAVI2"
+LANDTRENDR_MSAVI2SEG_FTV_INDICES = ["NBR", "NDMI", "BSI"]
+
 LANDTRENDR_RECENT_WINDOWS = {
     "disturbance": [(2016, 2025), (2022, 2025)],
     "recovery": [(2016, 2025)],
