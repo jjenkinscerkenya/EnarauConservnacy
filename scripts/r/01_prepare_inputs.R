@@ -14,7 +14,7 @@ source("R/io.R")
 source("R/recode.R")
 source("R/qa.R")
 
-STRICT_INPUT_CHECK <- FALSE  # set TRUE once all 60 files are downloaded
+STRICT_INPUT_CHECK <- TRUE  # all 60 files confirmed present 2026-07-15
 
 message("=== 01_prepare_inputs: checking input manifest ===")
 missing_files <- check_inputs_present(strict = STRICT_INPUT_CHECK)

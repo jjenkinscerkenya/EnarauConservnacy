@@ -35,21 +35,26 @@ patch_poly <- patches_result$patch_polygons
 message(nrow(patch_poly), " patches retained.")
 
 message("Computing patch-level metrics (edge_depth = ", EDGE_DEPTH_CELLS, " cell)...")
-patch_metrics <- calculate_patch_metrics(current_bin)
-readr::write_csv(patch_metrics, file.path(TABLES_DIR, "landscape_patch_metrics_current.csv"))
+# Uses patches_result$patch_id_raster (this project's own patch labeling, already filtered to
+# >= MIN_PATCH_AREA_HA) as a multi-class raster -- one class per patch -- rather than
+# calculate_lsm()'s own internal patch delineation, whose ID numbering was empirically confirmed
+# (2026-07-15) NOT to match terra::patches()'s IDs at all (0 of 271 overlapped in a real test).
+# See R/patch_graph.R's calculate_patch_metrics() docs. The patch_id join below is now exact by
+# construction (class == patch_id), not assumed.
+patch_metrics <- calculate_patch_metrics(patches_result$patch_id_raster)
+patch_enn <- calculate_patch_nearest_neighbor(patch_poly)
+message(nrow(patch_metrics), " patch-metric rows (", length(unique(patch_metrics$patch_id)), " patches) computed.")
+readr::write_csv(dplyr::left_join(patch_metrics, patch_enn, by = "patch_id"), file.path(TABLES_DIR, "landscape_patch_metrics_current.csv"))
 
-# Cross-check: terra::patches() (used for patch_poly above) and calculate_lsm(level="patch")
-# (used for patch_metrics) are independent calls that must agree on patch identity -- see the
-# comment in R/patch_graph.R's delineate_patches(). Verify rather than assume.
 n_poly_patches <- nrow(patch_poly)
-n_metric_patches <- length(unique(patch_metrics$id[patch_metrics$class == 1]))
+n_metric_patches <- length(unique(patch_metrics$patch_id))
 if (n_poly_patches != n_metric_patches) {
   warning(sprintf(
-    "Patch count mismatch: %d polygons from terra::patches() vs %d patch IDs from calculate_lsm() -- patch_id join below may be unreliable.",
+    "Patch count mismatch: %d polygons vs %d patch-metric IDs -- investigate before trusting the join.",
     n_poly_patches, n_metric_patches
   ))
 } else {
-  message("Patch count cross-check OK: ", n_poly_patches, " patches agree between terra::patches() and calculate_lsm().")
+  message("Patch count cross-check OK: ", n_poly_patches, " patches agree.")
 }
 
 message("Attributing patches to primary sites...")
@@ -79,12 +84,13 @@ readr::write_csv(graph_metrics_all, file.path(TABLES_DIR, "landscape_patch_graph
 mid_threshold_name <- paste0("w", MOVING_WINDOW_RADII_M[MOVING_WINDOW_RADII_M == 500], "m")
 mid_graph <- graph_results[[mid_threshold_name]]$node_metrics
 
-# patch_metrics already has all four (area/core/shape/enn) pivoted long by `metric`; reshape once.
+# patch_metrics has ca/core_mn/shape_mn pivoted long by `metric` (patch_id already a proper
+# column, see calculate_patch_metrics()); pivot to wide and bring in ENN separately.
 patch_metrics_wide <- tidyr::pivot_wider(
-  patch_metrics[patch_metrics$class == 1, c("id", "metric", "value")],
+  patch_metrics[, c("patch_id", "metric", "value")],
   names_from = metric, values_from = value
-)
-names(patch_metrics_wide)[names(patch_metrics_wide) == "id"] <- "patch_id"
+) |>
+  dplyr::left_join(patch_enn, by = "patch_id")
 
 importance_input <- patch_metrics_wide |>
   dplyr::left_join(mid_graph[, c("patch_id", "betweenness")], by = "patch_id") |>
@@ -92,9 +98,9 @@ importance_input <- patch_metrics_wide |>
   dplyr::left_join(site_attribution, by = "patch_id")
 
 importance_input$patch_importance_score <- compute_patch_importance_score(
-  area_ha = importance_input$area,
-  core_area_ha = importance_input$core,
-  enn_m = importance_input$enn,
+  area_ha = importance_input$ca,
+  core_area_ha = importance_input$core_mn,
+  enn_m = importance_input$enn_m,
   betweenness = importance_input$betweenness,
   mean_pressure = importance_input$mean_pressure
 )

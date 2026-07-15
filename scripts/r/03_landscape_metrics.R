@@ -56,13 +56,13 @@ run_metrics_for_raster <- function(habitat_class_path, id_values, coverage_table
     entropy_bin <- calculate_entropy_pilot(r_bin_site)
     entropy_bin <- cbind(site_id = sid, landscape_type = "binary_natural", entropy_bin, as.data.frame(id_values))
 
-    list(class = class_m, binary = binary_m, entropy = rbind(entropy_full, entropy_bin))
+    list(class = class_m, binary = binary_m, entropy = dplyr::bind_rows(entropy_full, entropy_bin))
   })
   rows <- rows[!vapply(rows, is.null, logical(1))]
   list(
-    class = do.call(rbind, lapply(rows, `[[`, "class")),
-    binary = do.call(rbind, lapply(rows, `[[`, "binary")),
-    entropy = do.call(rbind, lapply(rows, `[[`, "entropy"))
+    class = dplyr::bind_rows(lapply(rows, `[[`, "class")),
+    binary = dplyr::bind_rows(lapply(rows, `[[`, "binary")),
+    entropy = dplyr::bind_rows(lapply(rows, `[[`, "entropy"))
   )
 }
 
@@ -104,9 +104,14 @@ if (nrow(period_available) > 0) {
   message("No period composite rasters available yet -- skipping period metrics.")
 }
 
-class_metrics <- do.call(rbind, all_class)
-binary_metrics <- do.call(rbind, all_binary)
-entropy_metrics <- do.call(rbind, all_entropy)
+# bind_rows (not rbind) -- seasonal rows carry year/season columns, period rows carry a period
+# column instead; rbind() can't reconcile the mismatched schemas but bind_rows() aligns them and
+# fills the other set's columns with NA, which is exactly what downstream code expects (e.g. the
+# metric-change summary below filters on !is.na(period), which only works if seasonal rows
+# contribute a real (NA) period column rather than the column being entirely absent).
+class_metrics <- dplyr::bind_rows(all_class)
+binary_metrics <- dplyr::bind_rows(all_binary)
+entropy_metrics <- dplyr::bind_rows(all_entropy)
 
 if (!is.null(class_metrics) && nrow(class_metrics) > 0) {
   readr::write_csv(class_metrics, file.path(TABLES_DIR, "landscape_fragmentation_metrics_full_class_by_site_year_season.csv"))
