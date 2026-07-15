@@ -9,6 +9,13 @@ RASTER_DIR = OUTPUTS_DIR / "rasters"
 PLOTS_DIR = OUTPUTS_DIR / "plots"
 TABLES_DIR = OUTPUTS_DIR / "tables"
 LANDSCAPE_RASTER_DIR = RASTER_DIR / "landscape_metrics"
+VECTORS_DIR = OUTPUTS_DIR / "vectors"
+# Manually-downloaded Objective 1 (Dynamic World) raster exports -- Drive folder
+# DW_EXPORT_FOLDER (below) is the source of truth; these are not re-exported here, just the local
+# landing folder Objective 3's R scripts read from after a manual Drive download, same convention
+# as outputs/tables/ for the CSVs. Not an R-importable constant -- scripts/r/00_config.R mirrors
+# this path literally since R cannot `import config.py`.
+DW_RASTER_INPUT_DIR = RASTER_DIR / "dynamic_world"
 
 # Output directory names
 OUTPUT_DIRS = {
@@ -16,6 +23,7 @@ OUTPUT_DIRS = {
     "landscape_metrics": LANDSCAPE_RASTER_DIR,
     "tables": TABLES_DIR,
     "rasters": RASTER_DIR,
+    "vectors": VECTORS_DIR,
 }
 
 #################### AOI BOUNDARIES ##########################
