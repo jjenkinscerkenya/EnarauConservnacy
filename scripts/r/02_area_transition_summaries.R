@@ -2,7 +2,7 @@
 #
 # RUN AS: cd scripts/r && Rscript 02_area_transition_summaries.R
 #
-# Reads Objective 1's EXISTING zonal-statistics CSVs (already computed server-side in GEE,
+# Reads EXISTING zonal-statistics CSVs (already computed server-side in GEE,
 # independent of which rasters were exported) rather than recomputing area-by-class from raw
 # rasters -- these CSVs already cover annual/seasonal AND period-level area-by-class, plus
 # transition areas. No raster reads in this script.
@@ -77,8 +77,8 @@ transition_groups <- list(
   pressure_to_natural  = c(41, 42, 43, 51, 52, 53, 61, 62, 63),
   stable_pressure      = c(44, 45, 46, 54, 55, 56, 64, 65, 66)
 )
-# Structural-change sub-flags, not mutually exclusive with stable_natural above -- a finer cut
-# within the natural classes, used for a different reporting question (woodland/grassland shifts).
+# Structural-change sub-flags, not mutually exclusive with stable_natural above  
+# used for woodland/grassland shifts.
 structural_change_groups <- list(
   woody_to_grass_or_mixed = c(12, 13),
   grass_to_woody_or_mixed = c(21, 23)

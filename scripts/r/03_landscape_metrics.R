@@ -4,7 +4,7 @@
 #
 # MASKS TO SITE FIRST (crop + mask each raster to each site polygon before calculate_lsm()) --
 # this is Level 2, answering "what does fragmentation look like within this site." Level 3
-# (04/05) must NOT follow this pattern -- see the masking-order rule in the plan.
+# must NOT follow this pattern -- see the masking-order rule in the plan.
 #
 # Processes only the seasonal/period rasters actually present locally (missing files are skipped
 # with a message, not a hard failure) -- run 01_prepare_inputs.R first to see what's missing.

@@ -1,4 +1,4 @@
-# Mirrors C:/Users/harre/Repos/CERK/EnarauConservnacy/config.py -- config.py is the Python
+# Mirrors EnarauConservnacy/config.py -- config.py is the Python
 # source of truth for this repo. R cannot `import config.py` (no reticulate in use anywhere in
 # this repo, by design -- see CLAUDE.md's "mixed-language stack, not pure Python"). If config.py's
 # PROJECT_CRS, DW_PERIODS, DW_HABITAT_CLASS_LABELS, SITES, or STUDY_AREA_BUFFER_M change, this
@@ -39,10 +39,9 @@ for (d in c(LANDSCAPE_RASTER_DIR, VECTORS_DIR, TABLES_DIR, PLOTS_DIR)) {
 }
 
 #################### PROJECT-WIDE SETTINGS ####################
-# Confirmed 2026-07-06, WGS 84 / UTM zone 36S -- same correction as config.py's own comment
-# (the Objective 1 plan document's EPSG:32637 is the wrong hemisphere for this AOI).
+# WGS 84 / UTM zone 36S
 PROJECT_CRS <- "EPSG:32736"
-STUDY_AREA_BUFFER_M <- 150  # documentation parity only; already baked into downloaded raster extents
+STUDY_AREA_BUFFER_M <- 150
 
 #################### AOI BOUNDARIES / SITE METADATA ####################
 AOI_PATHS <- list(
@@ -59,7 +58,7 @@ SITES <- data.frame(
   stringsAsFactors = FALSE
 )
 
-#################### DYNAMIC WORLD CLASS SCHEME (Objective 1) ####################
+#################### DYNAMIC WORLD CLASS SCHEME ####################
 # There is no class 0 -- classify_habitat() never emits it. NoData is the raster's own -9999
 # sentinel (see NODATA_SENTINEL below), not a literal class value.
 DW_HABITAT_CLASS_LABELS <- c(
@@ -73,8 +72,8 @@ EXCLUDED_CLASSES   <- c(7, 8)  # + raster NA
 DW_PRESSURE_CLASS_LABELS <- c(`0` = "Low", `1` = "Moderate", `2` = "High")
 
 #################### PERIODS ####################
-# Matches config.py's DW_PERIODS (Objective 1); Objective 2's own PERIODS uses different year
-# ranges (Landsat baseline 1984-2000) and is NOT the same dict -- don't conflate the two.
+# Matches config.py's DW_PERIODS; Objective 2 PERIODS uses different year
+# ranges (Landsat baseline 1984-2000) and is NOT the same dict.
 DW_PERIODS <- list(
   baseline = c(2016, 2018),
   pre      = c(2019, 2021),
@@ -87,9 +86,8 @@ DW_PERIOD_TOKENS <- c(
 )
 
 #################### RASTER / QA CONSTANTS ####################
-NODATA_SENTINEL <- -9999  # eetools.io.export_image_to_drive's unmask() sentinel; verified in 01_prepare_inputs.R
-                          # that terra reads this as NA on load, not literal data.
-VALID_PIXEL_COVERAGE_MIN <- 0.80  # TGBS_Kwale precedent: site-years below this show artificial
+NODATA_SENTINEL <- -9999  # terra reads this as NA on load, not literal data.
+VALID_PIXEL_COVERAGE_MIN <- 0.80  # site-years below this show artificial
                                   # patch breaks that inflate NP/PD/ED -- exclude from Level 2/3.
 
 #################### LANDSCAPE METRICS PARAMETERS ####################

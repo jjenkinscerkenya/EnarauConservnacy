@@ -1,4 +1,4 @@
-# Objective 3, step 6: linkage priority score synthesis, Objective 2 cross-check, figures.
+# Objective 3, step 6: linkage priority score synthesis, Objective 2 cross-check.
 #
 # RUN AS: cd scripts/r && Rscript 06_figures_and_exports.R
 #
@@ -6,6 +6,11 @@
 # radius specifically, see LINKAGE_SCORE_RADIUS_M below), and 05 (patch importance/graph). Run
 # those first; this script skips any component gracefully (with a message) if its upstream
 # output isn't present yet, but the final linkage_priority_score.tif requires all four.
+#
+# Figures are NOT generated here -- all Objective 3 plotting lives in
+# scripts/python/plotting/landscape_metrics.ipynb (pandas/matplotlib/seaborn), reading this
+# script's and 03's table outputs from outputs/tables/, for consistency with Objectives 1-2's
+# plotting convention (kept in Python, not duplicated per-language).
 
 source("00_config.R")
 source("R/io.R")
@@ -33,7 +38,7 @@ if (have_current_class && have_transition_raster && have_local_connectivity && h
   grid_template <- current_bin
 
   # ---- 1. Persistent or recovered natural habitat (from the transition raster directly) ----
-  transition_r <- terra::rast(transition_raster_path)
+  transition_r <- read_transition_raster(transition_raster_path)
   stable_natural_codes <- c(11, 12, 13, 21, 22, 23, 31, 32, 33)
   recovered_codes <- c(41, 42, 43, 51, 52, 53, 61, 62, 63)
   persistent_or_recovered <- terra::classify(
@@ -161,51 +166,6 @@ if (file.exists(net_natural_change_path) && file.exists(nbr_event_path) && file.
           "are present in outputs/tables/ (from Objective 2).")
 }
 
-# ---- Figures ----
-message("=== Figures ===")
-
-area_period_path <- file.path(TABLES_DIR, "landscape_area_by_class_tidy_site_period.csv")
-if (file.exists(area_period_path)) {
-  area_period_tidy <- readr::read_csv(area_period_path, show_col_types = FALSE)
-  area_period_tidy$period <- factor(area_period_tidy$period, levels = c("baseline", "pre", "current"))
-  p <- ggplot2::ggplot(area_period_tidy, ggplot2::aes(x = period, y = area_ha, fill = habitat_label)) +
-    ggplot2::geom_col() +
-    ggplot2::facet_wrap(~site_name, scales = "free_y") +
-    ggplot2::labs(title = "Habitat class area by site and period", x = NULL, y = "Area (ha)", fill = "Class") +
-    ggplot2::theme_minimal()
-  ggplot2::ggsave(file.path(PLOTS_DIR, "landscape_class_area_by_site_trend.png"), p, width = 10, height = 7, dpi = 200)
-}
-
-binary_metrics_path <- file.path(TABLES_DIR, "landscape_connectivity_metrics_binary_natural_by_site_year_season.csv")
-if (file.exists(binary_metrics_path)) {
-  binary_metrics <- readr::read_csv(binary_metrics_path, show_col_types = FALSE)
-  # "year" won't exist yet if only period composites (no seasonal per-year rasters) have been
-  # processed by 03 so far -- don't assume the column is present.
-  seasonal_only <- if ("year" %in% names(binary_metrics)) binary_metrics[!is.na(binary_metrics$year), ] else binary_metrics[0, ]
-  if (nrow(seasonal_only) > 0) {
-    for (m in c("pland", "pd", "lpi", "cohesion", "mesh")) {
-      sub <- seasonal_only[seasonal_only$metric == m, ]
-      if (nrow(sub) == 0) next
-      p <- ggplot2::ggplot(sub, ggplot2::aes(x = year, y = value, color = site_id, linetype = season)) +
-        ggplot2::geom_line() + ggplot2::geom_point() +
-        ggplot2::labs(title = paste("Natural-habitat", toupper(m), "by site"), x = NULL, y = m) +
-        ggplot2::theme_minimal()
-      ggplot2::ggsave(file.path(PLOTS_DIR, sprintf("landscape_%s_by_site_trend.png", m)), p, width = 9, height = 6, dpi = 200)
-    }
-  }
-}
-
-corr_matrix_path <- file.path(TABLES_DIR, "landscape_metric_correlation_matrix.csv")
-if (file.exists(corr_matrix_path)) {
-  corr_long <- readr::read_csv(corr_matrix_path, show_col_types = FALSE)
-  names(corr_long) <- c("metric_a", "metric_b", "r")
-  p <- ggplot2::ggplot(corr_long, ggplot2::aes(x = metric_a, y = metric_b, fill = r)) +
-    ggplot2::geom_tile() +
-    ggplot2::scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b", midpoint = 0, limits = c(-1, 1)) +
-    ggplot2::theme_minimal() +
-    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1)) +
-    ggplot2::labs(title = "Landscape metric correlation matrix", x = NULL, y = NULL, fill = "r")
-  ggplot2::ggsave(file.path(PLOTS_DIR, "landscape_metric_correlation_heatmap.png"), p, width = 8, height = 7, dpi = 200)
-}
-
 message("=== 06_figures_and_exports complete ===")
+message("Figures: run scripts/python/plotting/landscape_metrics.ipynb to (re)generate plots from ",
+        "this script's and 03's table outputs.")

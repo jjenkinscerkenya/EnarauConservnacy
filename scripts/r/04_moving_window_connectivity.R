@@ -1,15 +1,15 @@
-# Objective 3, step 4: moving-window local connectivity change maps (Level 3a).
+# Moving-window local connectivity change maps.
 #
 # RUN AS: cd scripts/r && Rscript 04_moving_window_connectivity.R
 #
 # PROJECT-WIDE FIRST, clip only for reporting/figures afterward -- a real corridor pinch-point
 # can straddle a site boundary; masking to site before window_lsm() would truncate it. See the
-# masking-order rule in the plan.
+# masking-order rule.
 #
 # window_lsm() is the single most expensive step in this pipeline (PD/CLUMPY require per-window
 # patch delineation, far more costly than PLAND/ED's focal-sum approach). DO NOT run this
-# project-wide/full-radius on a whim -- run the smoke test below first (Verification step 5 of
-# the plan) and read off the printed timing estimate before committing to a full run.
+# project-wide/full-radius on a whim -- run the smoke test below first
+# and read off the printed timing estimate before committing to a full run.
 
 source("00_config.R")
 source("R/io.R")

@@ -1,4 +1,4 @@
-# Valid-pixel-coverage QA (TGBS_Kwale precedent): a site-year with only ~55% valid pixel
+# Valid-pixel-coverage QA: a site-year with only ~55% valid pixel
 # coverage produced artificial patch breaks that inflated NP/PD/ED. No standalone valid_obs_count
 # raster exists per-year/seasonal (only inside the 9-band period stacks) -- masking already
 # happened upstream at classification time (Objective 1's min-observation/top1_prob gates), so the
